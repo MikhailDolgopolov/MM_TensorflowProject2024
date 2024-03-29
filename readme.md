@@ -1,1 +1,1 @@
-Используется Датасет "Twitter Sentiment Analysis": https://www.kaggle.com/datasets/jp797498e/twitter-entity-sentiment-analysis
+Используется Датасет "News Headlines Dataset For Sarcasm Detection": https://www.kaggle.com/datasets/rmisra/news-headlines-dataset-for-sarcasm-detection/data
