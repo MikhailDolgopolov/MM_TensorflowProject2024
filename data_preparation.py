@@ -1,3 +1,4 @@
+import re
 import string
 
 import pandas as pd
@@ -37,10 +38,16 @@ def prepare(df):
     df["punct"] = df["headline"].apply(lambda s: count(s, string.punctuation))
     df["orig_word_count"] = df["headline"].apply(lambda t: len(t.split()))
     df["headline"] = df["headline"].str.replace(r"[^\w\s]", '', regex=True)
+    df["punct"] = df["punct"]/df["orig_word_count"]
+    from unidecode import unidecode
     for i in range(len(stopword_lists)):
         col = f"good_words_{i + 1}"
         df[col] = df["headline"].apply(
             lambda x: ' '.join([word for word in x.split() if word not in (stopword_lists[i])]))
         df[f"percent_{i + 1}"] = df[col].apply(lambda t: len(t.split())) / df["orig_word_count"]
-    df.drop(["orig_word_count", "headline"], axis=1)
+    df = df.drop(["orig_word_count", "headline"], axis=1)
     return df
+
+def prepare_list(sentences, num):
+    df = pd.DataFrame(sentences)
+    return prepare(df)[f"good_words_{num}"]
