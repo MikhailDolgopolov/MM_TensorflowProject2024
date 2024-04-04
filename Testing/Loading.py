@@ -30,51 +30,47 @@ def my_predict(data):
     return results
 
 
-def get_results(path):
-    articles = pd.read_table(path, names=["headline"])
-    prepared = prepare(articles)
+def get_results(headlines):
+    prepared = prepare(headlines)
 
     all_features = ["punct", "percent_1", "percent_2", "percent_3", "headline"]
     all_features.extend(using_texts)
+    if "is_sarcastic" in headlines:
+        all_features.append("is_sarcastic")
     my_data = prepared[all_features]
     return my_predict(my_data)
 
 
-onion = get_results("../Data/new_onion_headlines.txt")
+onion = get_results(pd.read_table("../Data/new_onion_headlines.txt", names=["headline"]))
 onion["is_sarcastic"] = 1
-real = get_results("../Data/new_real_articles.txt")
+real = get_results(pd.read_table("../Data/new_real_articles.txt", names=["headline"]))
 real["is_sarcastic"] = 0
 
-table = pd.concat((onion, real))
+original = pd.concat((onion, real))
 
-data = list(parse_data('../Data/SarcasmInNews/Sarcasm_Headlines_Dataset_v2.json'))
-original = pd.DataFrame.from_records(data).drop("article_link", axis=1)
-prepared = prepare(original)
+# data = list(parse_data('../Data/SarcasmInNews/Sarcasm_Headlines_Dataset_v2.json'))
+# original = pd.DataFrame.from_records(data).drop("article_link", axis=1)
+# prepared = prepare(original)
 
 all_features = ["punct", "percent_1", "percent_2", "percent_3", "headline", "is_sarcastic"]
 all_features.extend(using_texts)
-nn_result = my_predict(prepared[all_features])
+table = get_results(original)
 results = pd.DataFrame({"percent":[0], "precision":[0],"recall":[1], "F1":[0]})
 
-for i in range(5, 96,10):
-    # table = pd.concat((onion, real))
-    table = nn_result.copy()
-    table["result"] = np.where(table["result"] < i / 100, 0, 1)
+table["result"] = np.where(table["result"] < 0.5, 0, 1)
 
-    table["tp"] = np.where((table["result"] == 1) & (table["is_sarcastic"] == 1), 1, 0)
-    table["tn"] = np.where((table["result"] == 0) & (table["is_sarcastic"] == 0), 1, 0)
-    table["fn"] = np.where((table["is_sarcastic"] == 1) & (table["result"] == 0), 1, 0)
-    table["fp"] = np.where((table["is_sarcastic"] == 0) & (table["result"] == 1), 1, 0)
+table["tp"] = np.where((table["result"] == 1) & (table["is_sarcastic"] == 1), 1, 0)
+table["tn"] = np.where((table["result"] == 0) & (table["is_sarcastic"] == 0), 1, 0)
+table["fn"] = np.where((table["is_sarcastic"] == 1) & (table["result"] == 0), 1, 0)
+table["fp"] = np.where((table["is_sarcastic"] == 0) & (table["result"] == 1), 1, 0)
 
-    tp = np.count_nonzero(table["tp"])
-    tn = np.count_nonzero(table["tn"])
-    fp = np.count_nonzero(table["fp"])
-    fn = np.count_nonzero(table["fn"])
-    p = tp / (tp + fp)
-    r = tp / (tp + fn)
-    F = 2 * (p * r) / (p + r)
-    d = {"percent":i/100, "precision":p,"recall":r, "F1":F}
-    results = results._append(d, ignore_index=True)
-results=results.set_index("percent")
+tp = np.count_nonzero(table["tp"])
+tn = np.count_nonzero(table["tn"])
+fp = np.count_nonzero(table["fp"])
+fn = np.count_nonzero(table["fn"])
+p = tp / (tp + fp)
+r = tp / (tp + fn)
+F = 2 * (p * r) / (p + r)
+
 
 print(results)
