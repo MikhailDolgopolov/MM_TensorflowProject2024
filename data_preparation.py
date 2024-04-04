@@ -7,9 +7,9 @@ pd.set_option('display.max_rows', 500)
 pd.set_option('display.max_columns', 500)
 pd.set_option('display.width', 1000)
 
-short_stopword_list = "a, an, and, are, as, at, be, but, by, for, if, in, into, is, it, no, not, of, on, or, such, that, the, their, then, there, these, they, this, to, was, will, with".split(
+short_stopword_list = ("a, an, and, are, as, at, be, but, by, for, if, in, into, is, it, no, not, of, on, or, such, that, the, their, then, there,"
+                       " these, they, this, to, was, will, with").split(
     ", ")
-# print(f"{len(short_stopword_list)=}")
 
 import requests
 
@@ -20,7 +20,7 @@ mid_stopword_list = mid_list.text.split("\n")
 
 long_list = requests.get(r"https://raw.githubusercontent.com/stopwords-iso/stopwords-en/master/stopwords-en.txt")
 long_stopword_list = long_list.text.split("\n")
-# print(f"{len(long_stopword_list)=}")
+
 
 stopword_lists = [short_stopword_list, mid_stopword_list, long_stopword_list]
 
@@ -37,15 +37,15 @@ def prepare(df):
 
     df["punct"] = df["headline"].apply(lambda s: count(s, string.punctuation))
     df["orig_word_count"] = df["headline"].apply(lambda t: len(t.split()))
-    df["headline"] = df["headline"].str.replace(r"[^\w\s]", '', regex=True)
+    df["text"] = df["headline"].str.replace(r"[^\w\s]", '', regex=True)
     df["punct"] = df["punct"]/df["orig_word_count"]
-    from unidecode import unidecode
+    df["garbage_words"] = df["text"].apply(lambda x: ' '.join([word for word in x.split() if word in stopword_lists[-1]]))
     for i in range(len(stopword_lists)):
         col = f"good_words_{i + 1}"
-        df[col] = df["headline"].apply(
+        df[col] = df["text"].apply(
             lambda x: ' '.join([word for word in x.split() if word not in (stopword_lists[i])]))
         df[f"percent_{i + 1}"] = df[col].apply(lambda t: len(t.split())) / df["orig_word_count"]
-    df = df.drop(["orig_word_count", "headline"], axis=1)
+    df = df.drop(["orig_word_count", "text"], axis=1)
     return df
 
 def prepare_list(sentences, num):

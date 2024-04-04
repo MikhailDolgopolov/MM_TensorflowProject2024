@@ -19,7 +19,7 @@ data = list(parse_data('Data/SarcasmInNews/Sarcasm_Headlines_Dataset_v2.json'))
 original = pd.DataFrame.from_records(data).drop(["article_link"], axis=1)
 prepared = prepare(original)
 
-using_text = "good_words_2"
+using_text = "good_words_3"
 def numbers_only(inpu):
     df = inpu.loc[:, ~inpu.columns.str.startswith('good')]
 
@@ -68,7 +68,7 @@ list_of_texts = df[using_text].tolist()
 # df = pd.DataFrame(corpus_dict.items(), columns=['id', 'text'])
 
 # list_of_texts = df['text'].tolist()
-vectorizer = CountVectorizer(min_df=1, strip_accents="unicode", token_pattern=r"(?u)\b[A-z]{2,}\b", max_features=5000)
+vectorizer = CountVectorizer(min_df=1, strip_accents="unicode", token_pattern=r"(?u)\b[A-z]{2,}\b", max_features=1000)
 term_doc_matrix = vectorizer.fit_transform(list_of_texts)
 
 dictionary = vectorizer.get_feature_names_out()
@@ -81,7 +81,7 @@ full = np.concatenate((df[["is_sarcastic"]].to_numpy(), matrix), axis=1)
 
 
 
-train, test = train_test_split(full, test_size=0.2, stratify=df["is_sarcastic"])
+train, test = train_test_split(full, test_size=0.1, stratify=df["is_sarcastic"])
 
 X_train, y_train = train[:,1:], train[:,0]
 X_test, y_test = test[:,1:], test[:,0]
@@ -90,21 +90,27 @@ X_test, y_test = test[:,1:], test[:,0]
 print(X_train.shape)
 model = Sequential([
         layers.Dense(X_train.shape[1]),
-        layers.Dense(512, activation='relu', kernel_regularizer=L2(1e-3)),
-        layers.Dropout(0.2),
-        layers.Dense(32, activation='relu', kernel_regularizer=L2(1e-3)),
-        layers.Dense(32, activation='relu', kernel_regularizer=L2(1e-3)),
+        layers.Dense(5, activation='relu', kernel_regularizer=L2(1e-3)),
+        # layers.Dropout(0.1),
+        layers.Dense(5, activation='relu', kernel_regularizer=L2(1e-3)),
+        # layers.Dense(32, activation='relu', kernel_regularizer=L2(1e-3)),
         # layers.Dropout(0.1),
         layers.Dense(1, activation='sigmoid')
     ])
 
 model.compile(
         loss=tf.keras.losses.binary_crossentropy,
-        optimizer=tf.keras.optimizers.Adam(learning_rate=2e-5),
+        optimizer=tf.keras.optimizers.Adam(learning_rate=1e-3),
         metrics=['accuracy']
 )
 history = model.fit(
         X_train, y_train,
-        epochs=25
+        epochs=15
 )
-# model.evaluate(X_test, y_test)
+print()
+model.evaluate(X_test, y_test)
+
+# layers.Dense(32, activation='elu', kernel_regularizer=L2(1e-3)),
+# layers.Dense(18, activation='elu', kernel_regularizer=L2(1e-3)),
+
+#0.88 0.77

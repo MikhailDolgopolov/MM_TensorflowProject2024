@@ -24,7 +24,7 @@ from sklearn.model_selection import train_test_split
 
 print(tf.config.list_physical_devices())
 
-vocab_size = 10000
+vocab_size = 6000
 
 count_vectorizer = tf.keras.layers.TextVectorization(
     max_tokens=vocab_size,
@@ -45,20 +45,20 @@ model = Sequential([
     layers.Dense(64, activation='relu', kernel_regularizer=L2(1e-3)),
     layers.Dropout(0.1),
     layers.Dense(64, activation='relu', kernel_regularizer=L2(1e-3)),
-    layers.Dropout(0.1),
+    # layers.Dropout(0.1),
     layers.Dense(1, activation='sigmoid')
 ])
 
 model.compile(
-    loss=tf.keras.losses.binary_crossentropy,
-    optimizer=tf.keras.optimizers.Adam(learning_rate=2e-5),
+    loss=tf.keras.losses.binary_focal_crossentropy,
+    optimizer=tf.keras.optimizers.Adam(learning_rate=3e-4),
     metrics=['accuracy']
 )
 
 history = model.fit(
     training_dataset,
     steps_per_epoch=len(training_dataset),
-    epochs=14,
+    epochs=20,
     validation_data=validation_dataset,
     validation_steps=len(validation_dataset)
 )
