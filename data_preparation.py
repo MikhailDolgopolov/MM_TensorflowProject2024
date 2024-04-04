@@ -34,7 +34,7 @@ def parse_data(file):
 
 def prepare(df):
     def count(l1, l2): return sum([1 for x in l1 if x in l2])
-
+    df["headline"] = df["headline"].str.lower()
     df["punct"] = df["headline"].apply(lambda s: count(s, string.punctuation))
     df["orig_word_count"] = df["headline"].apply(lambda t: len(t.split()))
     df["text"] = df["headline"].str.replace(r"[^\w\s]", '', regex=True)

@@ -18,15 +18,19 @@ using_texts = ["good_words_2", "garbage_words"]
 
 
 def my_predict(data):
-    to_drop = [*using_texts]
-    to_drop.append("headline")
+    to_drop = [*using_texts, "headline"]
+    if "is_sarcastic" in data:
+        to_drop.append("is_sarcastic")
+
     predictions = model.predict({"my_values": data.drop(to_drop, axis=1),
                                  "garbage": data[using_texts[1]],
                                  "text": data[using_texts[0]]})
     results = pd.DataFrame(
-        {"headline": data["headline"], "result": np.round(np.array(predictions).flatten(), 2)}).sort_values(
-        by="result")
-
+        {"headline": data["headline"], "result": np.round(np.array(predictions).flatten(), 2)})
+    #
+    if "is_sarcastic" in data:
+        results["is_sarcastic"] = data["is_sarcastic"]
+    results = results.sort_values(by="result")
     return results
 
 
@@ -48,16 +52,16 @@ real["is_sarcastic"] = 0
 
 original = pd.concat((onion, real))
 
+print(prepare(original))
+
 # data = list(parse_data('../Data/SarcasmInNews/Sarcasm_Headlines_Dataset_v2.json'))
 # original = pd.DataFrame.from_records(data).drop("article_link", axis=1)
-# prepared = prepare(original)
-
-all_features = ["punct", "percent_1", "percent_2", "percent_3", "headline", "is_sarcastic"]
-all_features.extend(using_texts)
+# print(original)
 table = get_results(original)
-results = pd.DataFrame({"percent":[0], "precision":[0],"recall":[1], "F1":[0]})
+print(table)
 
 table["result"] = np.where(table["result"] < 0.5, 0, 1)
+
 
 table["tp"] = np.where((table["result"] == 1) & (table["is_sarcastic"] == 1), 1, 0)
 table["tn"] = np.where((table["result"] == 0) & (table["is_sarcastic"] == 0), 1, 0)
@@ -71,6 +75,4 @@ fn = np.count_nonzero(table["fn"])
 p = tp / (tp + fp)
 r = tp / (tp + fn)
 F = 2 * (p * r) / (p + r)
-
-
-print(results)
+print(p, r, F)
