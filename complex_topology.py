@@ -23,28 +23,13 @@ x_features = all_features.extend(using_texts)
 my_data = prepared[all_features]
 
 
-imp_vocab_size = 10000
-
-important_vectorizer = tf.keras.layers.TextVectorization(
-    max_tokens=imp_vocab_size,
-    output_mode='count'
-)
-
-garbage_vectorizer = tf.keras.layers.TextVectorization(
-    output_mode='count'
-)
-
 train, test = train_test_split(my_data, test_size=0.2, stratify=my_data["is_sarcastic"])
-important_vectorizer.adapt(train[using_texts[0]].values)
-garbage_vectorizer.adapt(train[using_texts[1]].values)
 
 
 
 X_train, y_train = train.drop("is_sarcastic", axis=1), train["is_sarcastic"]
 X_test, y_test = test.drop("is_sarcastic", axis=1), test["is_sarcastic"]
 
-print(X_test.shape)
-print(y_test.shape)
 
 values_input = tf.keras.Input(
     shape=(X_test.shape[1]-len(using_texts),), name="my_values"
@@ -57,7 +42,10 @@ imp_vocab_size = 5000
 
 important_vectorizer = tf.keras.layers.TextVectorization(
     max_tokens=imp_vocab_size,
-    output_mode='count', name="vectorizer"
+    output_mode='count', name="imp_vectorizer"
+)
+garbage_vectorizer = tf.keras.layers.TextVectorization(
+    output_mode='count'
 )
 important_vectorizer.adapt(X_train[using_texts[0]])
 garbage_vectorizer.adapt(X_train[using_texts[1]])
@@ -73,7 +61,7 @@ garbage_vectorizer = layers.Dense(15, activation="elu", kernel_regularizer=L2(1e
 
 numbers_layer = layers.Dense(20, activation="elu", name="1st_number_layer")(values_input)
 
-x = layers.concatenate([important_vectorizer, garbage_vectorizer, numbers_layer])
+x = layers.concatenate([important_vectorizer, numbers_layer])
 x = layers.Dense(20, activation="elu", name="Final_think")(x)
 
 pred_layer = layers.Dense(1, activation="sigmoid")(x)
@@ -81,7 +69,7 @@ pred_layer = layers.Dense(1, activation="sigmoid")(x)
 model = tf.keras.Model(inputs=[text_input, garbage_input, values_input],
                        outputs =[pred_layer])
 
-tf.keras.utils.plot_model(model, "multi_input_model.png", show_shapes=True)
+tf.keras.utils.plot_model(model, "test_model.png", show_shapes=True)
 
 model.compile(
     optimizer=tf.keras.optimizers.Adam(1e-4),
@@ -94,22 +82,10 @@ print()
 history = model.fit(
     {"my_values":X_train.drop(using_texts, axis=1),"garbage":X_train[using_texts[1]], "text":X_train[using_texts[0]]},
     y_train,
-    epochs=12
+    epochs=25
 )
 
-model.save("TrainedModels/final_model", save_format="tf")
+model.save("TrainedModels/test_model", save_format="tf")
 print("Trained: ")
-loaded_vectorize_layer_model = tf.keras.models.load_model("TrainedModels/my_model")
 model.evaluate({"my_values":X_test.drop(using_texts, axis=1),"garbage":X_test[using_texts[1]], "text":X_test[using_texts[0]]},
     y_test)
-print("Loaded: ")
-loaded_vectorize_layer_model.evaluate({"my_values":X_test.drop(using_texts, axis=1),"garbage":X_test[using_texts[1]], "text":X_test[using_texts[0]]},
-    y_test)
-# count_vectorizer = layers.Dense(20, activation="elu", name="1st_txt_layer")(count_vectorizer)
-#
-# numbers_layer = layers.Dense(20, activation="elu", name="1st_number_layer")(values_input)
-#
-# x = layers.concatenate([count_vectorizer, numbers_layer])
-# x = layers.Dense(20, activation="elu", name="Final_think")(x)
-#
-# 0.86 0.81

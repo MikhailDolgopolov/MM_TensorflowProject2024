@@ -13,7 +13,8 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 from data_preparation import parse_data, prepare
 
-model = tf.keras.models.load_model("../TrainedModels/my_model")
+model = tf.keras.models.load_model("../TrainedModels/test_model")
+# tf.keras.utils.plot_model(model, "multi_input_model_good.png", show_shapes=True)
 using_texts = ["good_words_2", "garbage_words"]
 
 
@@ -57,22 +58,33 @@ print(prepare(original))
 # data = list(parse_data('../Data/SarcasmInNews/Sarcasm_Headlines_Dataset_v2.json'))
 # original = pd.DataFrame.from_records(data).drop("article_link", axis=1)
 # print(original)
-table = get_results(original)
-print(table)
+nn_results = get_results(original)
 
-table["result"] = np.where(table["result"] < 0.5, 0, 1)
+nn_results["error"] = np.abs(nn_results["is_sarcastic"]-nn_results["result"])
+print(nn_results.sort_values(by="error"))
 
+for i in range(5, 95,10):
+    table = nn_results.copy()
+    table["result"] = np.where(table["result"] < i/100, 0, 1)
 
-table["tp"] = np.where((table["result"] == 1) & (table["is_sarcastic"] == 1), 1, 0)
-table["tn"] = np.where((table["result"] == 0) & (table["is_sarcastic"] == 0), 1, 0)
-table["fn"] = np.where((table["is_sarcastic"] == 1) & (table["result"] == 0), 1, 0)
-table["fp"] = np.where((table["is_sarcastic"] == 0) & (table["result"] == 1), 1, 0)
+    table["tp"] = np.where((table["result"] == 1) & (table["is_sarcastic"] == 1), 1, 0)
+    table["tn"] = np.where((table["result"] == 0) & (table["is_sarcastic"] == 0), 1, 0)
+    table["fn"] = np.where((table["is_sarcastic"] == 1) & (table["result"] == 0), 1, 0)
+    table["fp"] = np.where((table["is_sarcastic"] == 0) & (table["result"] == 1), 1, 0)
 
-tp = np.count_nonzero(table["tp"])
-tn = np.count_nonzero(table["tn"])
-fp = np.count_nonzero(table["fp"])
-fn = np.count_nonzero(table["fn"])
-p = tp / (tp + fp)
-r = tp / (tp + fn)
-F = 2 * (p * r) / (p + r)
-print(p, r, F)
+    tp = np.count_nonzero(table["tp"])
+    tn = np.count_nonzero(table["tn"])
+    fp = np.count_nonzero(table["fp"])
+    fn = np.count_nonzero(table["fn"])
+    p = tp / (tp + fp)
+    r = tp / (tp + fn)
+    F = 2 * (p * r) / (p + r)
+    print(f"{i/100} threshold: ", p, r, F)
+
+# 0.35
+
+print()
+table = nn_results.copy()
+table["result"] = np.where(table["result"] < 0.35, 0, 1)
+
+print(table[table["result"]!=table["is_sarcastic"]])
